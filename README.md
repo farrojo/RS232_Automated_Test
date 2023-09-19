@@ -1,1 +1,12 @@
 # RS232 Automated Test
+
+This repository demonstrates how to interact with a modem via RS232 communication. In this example, we will show how to use third-party software called [Docklight scripting](https://docklight.de/) to manage RS232 communication.
+
+This software provides two methods of interaction depending on the version used. The classic version allows you to program sending and receiving sequences. In the case of reception, it enables automation of responses, facilitating interaction with the modem. While this solution can be somewhat rigid, when used correctly, it can be efficient.
+
+The second method involves interaction through a script, for which the Docklight scripting version is required. These scripts are essentially written in the VBasic language and are interpreted by Docklight scripting with a .pst extension. This method offers greater advantages when interpreting strings during reception and generating responses. Please note that this software is not free, but its efficiency and ease of use make it a convenient choice for the intended environment. In scripting mode, it's straightforward to manage multiple ports sequentially, which is common in industrial modems that have more than one port. This makes it convenient for switching between ports and changing configurations such as parity or others.
+
+In this example, we will be using a [Cinterion](https://fccid.io/QIPEHS6-A/User-Manual/EHS6-A-User-Manual-Rev-2-2388095.pdf) modem, which has multiple serial ports. The primary port allows for modem feature setup. The objective of interacting with this modem is to load operating system files (.jar and .jad), change the speed of the ports, and activate previously loaded versions. While this task may seem simple, it becomes quite tiring for an operator in a large production setting. Additionally, repetitive work increases the likelihood of errors. To work with this modem, it is necessary to install the Cinterion Module Exchange Suite (MES) that interacts with it, facilitating firmware uploads.
+
+Once MES is installed, you will have a port available for loading firmware, either via USB on the development board or through a custom connection on your proprietary hardware board. You can then copy and paste the firmware folder. Here's where the trick comes into play: we will use the MES command to automate firmware loading. Additionally, by integrating basic Windows batch commands, we can detect when the modem is connected and load files when the modem becomes available.
+
