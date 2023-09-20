@@ -1,0 +1,62 @@
+DL_SCRIPTVERSION
+1
+28901
+
+stopvar=false
+uninst=false
+inst=false
+ver=false
+okvar=0
+
+DL.OpenProject ".\ATCommands.ptp"
+DL.StartCommunication
+DL.pause 1000
+DL.SendSequence "Stop"
+DL.pause 1000
+DO
+'DL.SendSequence "Stop"
+'DL.pause 2000
+DL.WaitForSequence "OK"
+Loop While stopvar=FALSE
+
+DO
+DL.SendSequence "Uninstall"
+DL.pause 500
+DL.WaitForSequence "OK"
+Loop While uninst=FALSE
+
+DO
+DL.SendSequence "Install"
+DL.pause 1200
+Loop While inst=FALSE
+
+DO
+DL.SendSequence "JAM4"
+DL.pause 500
+DL.WaitForSequence "Ready"
+Loop While ver=FALSE
+
+DL.AddComment "Cambio de version finalizado"
+DL.StopCommunication
+DL.pause 10
+DL.Quit
+
+Sub DL_OnReceive()
+
+    If  DL.OnReceive_GetName() = "OK" Then
+	  okvar=okvar+1
+        If  okvar = 1 Then
+	    stopvar=TRUE	                
+        End If 	
+        If  okvar = 2 Then
+	    uninst=TRUE	                
+        End If 
+        If  okvar = 3 Then
+	    inst=TRUE	                
+        End If 
+        If  okvar = 4 Then
+	    ver=TRUE	                
+        End If                 
+    End If 
+   
+End Sub
