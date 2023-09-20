@@ -1,0 +1,323 @@
+DL_SCRIPTVERSION
+1
+55562
+
+'dim result(7)={Card No, Date, Time, TotalTime, Test device, RS485, Version, Tester}
+dim result(9)
+Tester="Tester"
+Client="Client"
+Product="Product"
+TestStage="Final" 'Initial, Intermediate, Final
+
+
+Port_1 = "COM3"
+Port_2 = "COM43"
+Rele_Port = "COM30"
+Test_device = "Test device"
+Rele_485_A=1
+Rele_485_B=3
+Rele_reinicio=2
+
+
+Logpath = "parentFolder\"&Client&"\"&Product&"\"&TestStage&"\_Log_"&Date&"_"&Tester
+respath = "parentFolder\"&Client&"\"&Product&"\"&TestStage&"\_Res_"&Date&"_"&Tester&".txt"
+errorpath = ".\_error_log.txt"
+result(9)=Tester
+prefserial="INITIALSERIAL"
+Dim serialt
+do until len(serialt)=4 And IsNumeric(serialt)=True
+serialt = InputBox("Ingrese serial: "&prefserial&"_ _ _ _", "Card registration")
+
+if NOT len(serialt)=4 Or IsNumeric(serialt)=False Then
+    serialt=0
+    MsgBox("Error: Values must be 4 numbers lenght!")
+end if
+serial=prefserial&serialt    
+loop
+
+'Do
+'DL.ClearCommWindows
+
+DL.StartLogging Logpath,True,"A",,,True
+DL.openproject ".\COMMAND_DISPLAY.ptp"
+
+Timer_Ok = False
+Lectura_Ok = False
+Ini_Lec_Ok = False
+Ini_Display = False
+Vers = "Device test Ver  2023"
+Pass_Ok=0
+Fin_Ok=0
+Med_Ok=0
+COM_485 = False
+INI = False
+result(1)=serial
+result(2)=Date
+result(3)=Time
+result(7)=Test device
+
+DL.AddComment
+DL.ADDCOMMENT "|*********************************|"
+DL.ADDCOMMENT "|** RS485 Test"
+DL.ADDCOMMENT "|** Card No. "&serial
+DL.ADDCOMMENT "|** Date:"&result(2)
+DL.ADDCOMMENT "|** Time:"&result(3)
+DL.ADDCOMMENT "|** Test device: "&result(7)
+DL.ADDCOMMENT "|*********************************|"
+DL.ADDCOMMENT ""
+DL.AddComment
+
+DL.SetChannelSettings Rele_Port + ":115200,NONE,8,1", 1
+DL.StartCommunication
+'         _______
+' Tx  -- | RS485 | -- A
+' Rx  -- |_______| -- B
+'      
+DL.SendSequence "RELE_H", Rele_485_A
+DL.SendSequence "RELE_H", Rele_485_B
+DL.SendSequence "RELE_H", Rele_Restart
+DL.WaitForSequence "Ok",3
+DL.StopCommunication
+
+
+'Test_device reading
+DL.SetChannelSettings Port_2 + ":9600,NONE,8,1", 1
+DL.StartCommunication
+
+DL.WaitForSequence "Inicio",1,10000
+If Ini_Display = False Then
+	DL.AddComment "Error 485!"
+	error("Comunnication Error 4 85") ' number separater to get proper pronuntiation ;)
+	Dl.quit
+End if
+TIni=(now)
+
+pauseWithEvents 40000
+If Ini_Lec_Ok = False Then
+	DL.AddComment "Reading Error!"
+	error("Device reading error")
+	Dl.quit
+End if
+
+
+While Pass_Ok < 4
+	DL.WaitForSequence "Clave_"+Test_device
+	DL.ResetReceiveCounter "Clave_"+Test_device
+Wend
+While Med_Ok < 1
+	DL.WaitForSequence "Med_"+Test_device
+	DL.ResetReceiveCounter "Med_"+Test_device
+Wend
+While Fin_Ok < 3
+	DL.WaitForSequence "Fin_"+Test_device
+	DL.ResetReceiveCounter "Fin_"+Test_device
+Wend
+Dl.pause 200
+If Pass_Ok = 4 Then
+	If Med_Ok = 1 Then
+		If Fin_Ok = 3 Then
+			Lectura_Ok = True
+			DL.AddComment
+			DL.AddComment "Test_device reading finished!"
+			result(5) = "OK"
+			DL.AddComment Chr(7)
+		End If
+	End If
+End If
+
+
+DL.StopCommunication
+'Test_device reading
+
+'Transmision 485
+
+DL.SetChannelSettings Rele_Port + ":115200,NONE,8,1", 1
+Dl.startcommunication
+DL.ResetReceiveCounter "Ok"
+DL.SendSequence "RELE_L", Rele_485_A
+DL.SendSequence "RELE_L", Rele_485_B
+DL.WaitForSequence "Ok",2
+Dl.stopcommunication
+
+DL.SetChannelSettings Port_1 + ":9600,NONE,8,1", 1
+'DL.SetHandshakeSignals 1,0
+Dl.startcommunication
+DL.Pause 5000
+
+Do
+DL.SendSequence "CFG"
+DL.Pause 2000
+Loop While COM_485 = False
+
+If COM_485 = True Then
+	DL.Pause 500
+	DL.AddComment
+	DL.AddComment "Sending data for night conditions..."
+	DL.SendSequence "DISP_Night"
+	DL.Pause 800
+	DL.SendSequence "DISP_Night"
+	DL.Pause 8000
+	DL.AddComment
+	DL.AddComment "Restarting..."
+	INI = False
+	DL.ResetReceiveCounter "LOAD"
+	'DL.SetHandshakeSignals 1,1
+	DL.StopCommunication
+	DL.SetChannelSettings Rele_Port + ":115200,NONE,8,1", 1
+	Dl.startcommunication
+	DL.SendSequence "RELE_L", Rele_Restart
+	DL.ResetReceiveCounter "Ok"
+	DL.WaitForSequence "Ok"
+	DL.Pause 10000
+	'DL.SetHandshakeSignals 1,0
+	DL.SendSequence "RELE_H", Rele_Restart
+	DL.ResetReceiveCounter "Ok"
+	DL.WaitForSequence "Ok"
+	DL.StopCommunication
+	DL.SetChannelSettings Port_1 + ":9600,NONE,8,1", 1
+	Dl.startcommunication
+	DL.ResetReceiveCounter
+	DL.WaitForSequence "LOAD",1,12000
+	If INI = False Then
+		'DL.AddComment
+		'DL.AddComment "--> �Display excede 12 segundos de reinicio!"
+		'error("Not restarted after 12 seconds!")
+		COM_485 = False
+		DL.SendSequence "CFG"
+		dl.pause 300
+		if COM_485 = False Then
+			DL.AddComment
+			DL.AddComment "--> Not restarted after 12 seconds!!"
+			error("Restart time is over!")
+			Dl.Quit
+		End If
+	End If
+	'DL.WaitForSequence "LOAD"
+	'If LOAD = False Then
+	'DL.AddComment
+	'DL.AddComment "--> Restart failure!"
+	'DL.Quit
+	'End If
+	DL.Pause 1000
+	DL.AddComment
+	DL.AddComment "Sending night data..."
+	DL.SendSequence "DISP_NOCHE"
+	DL.Pause 5000
+	DL.ResetReceiveCounter
+	result(6)="OK"
+	DL.AddComment
+	DL.AddComment "Test finished!"
+	error("Test finished")
+	DL.Pause 1000
+End If
+
+DL.ResetReceiveCounter
+'DL.SetHandshakeSignals 0,0
+DL.StopCommunication
+DL.SetChannelSettings Rele_Port + ":115200,NONE,8,1", 1
+Dl.startcommunication
+DL.ResetReceiveCounter "Ok"
+DL.SendSequence "RELE_H", Rele_485_A
+DL.SendSequence "RELE_H", Rele_485_B
+DL.WaitForSequence "Ok",2
+
+TFin=(now)
+hh=DateDiff("s",TIni,TFin)\3600
+mm=DateDiff("s",TIni,TFin)\60
+ss=DateDiff("s",TIni,TFin)
+hh=hh mod 24
+ss=ss mod 60
+mm=mm mod 60
+If ss<10 Then
+	ss="0"&ss
+End If
+If mm<10 Then
+	mm="0"&mm
+End If
+If hh<10 Then
+	hh="0"&hh
+End If
+T_total=hh&":"&mm&":"&ss
+result(4)=T_total
+DL.AddComment
+DL.AddComment Chr(7)
+DL.pause 200
+'dl.AddComment "Start Time: "&TIni
+'dl.AddComment "End Time: "&TFin
+'dl.AddComment "Total Time: "&hh&":"&mm&":"&ss
+
+save()
+
+'Loop
+
+Sub DL_OnReceive()
+	If DL.OnReceive_GetName() = "Clave_"+Test_device Then
+		Pass_Ok=Pass_Ok+1
+		'DL.AddComment "CONT1: "&Pass_Ok
+	End If
+
+	If DL.OnReceive_GetName() = "Med_"+Test_device Then
+		Med_Ok=Med_Ok+1
+		'DL.AddComment "CONT2: "&Med_Ok
+	End If
+
+	If DL.OnReceive_GetName() = "Fin_"+Test_device Then
+		Fin_Ok=Fin_Ok+1
+		'DL.AddComment "CONT3: "&Fin_Ok
+	End If
+	If DL.OnReceive_GetName() = "Reading_starting" Then
+		Ini_Lec_Ok = True
+	End If
+	If DL.OnReceive_GetName() = "Start" Then
+		Ini_Display = True
+	End If
+
+	If DL.OnReceive_GetName() = "Version" Then
+		COM_485 = True
+	End If
+
+	If DL.OnReceive_GetName() = "LOAD" Then
+		INI = True
+	End If
+	If DL.OnReceive_GetName() = "Version_validation" Then
+		Version_Ok = DL.OnReceive_GetData("A", 12, 32)
+		If Version_Ok = Vers Then
+			DL.AddComment 
+			DL.AddComment "VERSION OK!"
+			result(8)=Version_Ok
+		ElseIf Version_Ok <> Vers Then
+			DL.AddComment 
+			DL.AddComment "WRONG VERSION!!!"
+			error("WRONG VERSION")
+			result(8)=Version_Ok
+			Dl.quit
+		End If
+	End If
+End Sub
+
+Sub pauseWithEvents(milliseconds)
+  startTime = Timer
+  While (Timer - startTime) < milliseconds / 1000
+      If Timer < (startTime - 1) Then startTime = startTime - 86400
+       DL.Pause 1
+  Wend
+End Sub
+
+sub save()
+    FileOutput.CreateFile respath,,True
+    for i=1 To ubound(result)
+        FileOutput.WriteLine result(i),false
+        if i=(ubound(result)) then
+            FileOutput.WriteLine "",True
+        else
+            FileOutput.WriteLine chr(09),false
+        End if
+    next    
+    FileOutput.CloseFile    
+End sub
+
+sub error(error_)
+    FileOutput.CreateFile errorpath,false,false
+    FileOutput.WriteLine error_,false
+    FileOutput.CloseFile    
+End sub
