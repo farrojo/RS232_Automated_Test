@@ -1,0 +1,32 @@
+DL_SCRIPTVERSION
+1
+21948
+
+DL.OpenProject "whereveritis\InitilaSetupCommandSet.ptp"
+DL.StartCommunication
+DL.SendSequence 18
+DL.pause 500
+DL.SendSequence 18
+DL.pause 500
+DL.SendSequence 2
+DL.WaitForSequence 18
+DL.AddComment "Main Port Ready!"
+DL.StopCommunication
+DL.OpenProject "whereveritis\ChangePortBaudRate\ChangePortBaudRate.ptp"
+' This is one of my favorite tricks:
+' in order to restart "automatically" the device to get changes done
+' we can manipulate HandshakeSignals of RS232 conection, to restart device making an 
+' energy cut, be careful of what you do! use respective protection for this
+' i mean transitors and other electric/electronic stuff
+DL.SetHandshakeSignals true, true 
+DL.StartCommunication
+DL.pause 1000
+DL.SetHandshakeSignals false, false
+DL.pause 8000
+DL.WaitForSequence 4
+DL.AddComment "Initial setup Finished"
+DL.StopCommunication
+DL.pause 500
+DL.Quit
+
+
