@@ -1,0 +1,43 @@
+' ModemScript.pts
+' Check the AT command set available for an analog modem
+'
+' Preconditions: The Docklight project file
+' "ModemATCommands.ptp" is loaded.
+
+DL.ClearCommWindows
+
+' Number of commands to try (default value = 15) 
+NoOfCommands = InputBox("How many AT commands should we test?","ModemScript", 15) 
+
+' Send an "initialize query" command 
+' and check, if modem responds at all
+' Try again in a 5 seconds interval
+DL.AddComment "Waiting for modem ..."
+Do 
+	DL.ResetReceiveCounter 
+	DL.SendSequence "ATQ0V1E0"
+Loop While DL.WaitForSequence("OK", 1, 5000) = 0
+
+' Make sure all hit counters are reset to zero
+DL.ResetReceiveCounter 
+' Now send all AT commands one by one
+DL.AddComment
+DL.AddComment "Checking AT command set..."
+For i = 0 To NoOfCommands - 1
+	DL.SendSequence "ATI?",i
+	DL.Pause 200
+Next
+
+DL.Pause 1000 ' give the modem some extra time to answer
+
+' Read the hit counter values
+ErrorCounter = DL.GetReceiveCounter ("ERROR")
+OKCounter = DL.GetReceiveCounter ("OK")
+
+DL.AddComment 
+DL.AddComment "Results:"
+DL.AddComment "Found " & OKCounter & " valid AT commands."
+
+If ErrorCounter > 0 Then
+	DL.AddComment ErrorCounter & " AT command(s) did not work."
+End If

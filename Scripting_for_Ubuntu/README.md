@@ -1,0 +1,8 @@
+# RS485 example with logs, on Ubuntu
+
+This example is a modification of original one unedr windows, here, we can see interaction from batch calling docklight script execution under wine installation, creating a log file based on test parameters, and finally activatting windows voice engine (pending to do microsoft tts adaption in ubunutu, under review [this project](https://github.com/rany2/edge-tts)), in order to notify the operator of any news about the process.
+
+Also in this example, the main device interacts with the second device through the RS485 communication port, which is used through an RS232-RS485 converter, remember that docklight installation is made using wine on ubuntu, so, in order to control activation and deactivation signal, must do a proper setup of ports (com port in windows). The control of ports, power on, and interruption of lines A and B of RS485 is done through a relay card controlled by the script, a  command line project for Arduino can be found [here](https://github.com/farrojo/ArduinoCommandLineInterface).
+
+
+```TestControl.sh``` drives the main execution, calling the docklight under wine installation, it is pretty important to keep in mind, that as it, docklight runs and call a .pts file that is essentially a VB script adapted to this software, its facillity makes ideal to be kept in the same project. Other fiels keep the same, only paths must be modified in order to run.
